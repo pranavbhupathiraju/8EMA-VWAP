@@ -1,0 +1,42 @@
+//@version=5
+indicator("8 EMA Wick Touch Zone", overlay=true)
+
+// Define the 8 EMA
+ema_8 = ta.ema(close, 8)
+
+// Function to check if the candle's wick touches the EMA
+wickTouchesEMA(open, high, low, close, ema) =>
+    high >= ema and low <= ema and (high > close or low < open)
+
+// Check if any of the last 10 candles did not touch the EMA
+noTouch = true
+for i = 1 to 10
+    noTouch := noTouch and not wickTouchesEMA(open[i], high[i], low[i], close[i], ema_8[i])
+
+// Check for 2 consecutive candles touching the EMA
+touch1 = wickTouchesEMA(open, high, low, close, ema_8)
+touch2 = wickTouchesEMA(open[1], high[1], low[1], close[1], ema_8[1])
+
+// Condition to draw the zone
+zone_condition = noTouch and touch1 and touch2
+
+// Declare variables globally with the correct type
+var line line_top = na
+var line line_bottom = na
+
+// Draw the zone
+if zone_condition
+    line_top := line.new(x1=bar_index[1], y1=high[1], x2=bar_index, y2=high, color=color.green, width=2)
+    line_bottom := line.new(x1=bar_index[1], y1=low[1], x2=bar_index, y2=low, color=color.red, width=2)
+
+    // Optional: Fill the area between the lines to create a shaded zone
+    linefill.new(line_top, line_bottom, color=color.new(color.green, 90))
+
+// Cleanup: Delete the lines if the condition is not met anymore
+if not zone_condition
+    if not na(line_top)
+        line.delete(line_top)
+        line_top := na
+    if not na(line_bottom)
+        line.delete(line_bottom)
+        line_bottom := na
